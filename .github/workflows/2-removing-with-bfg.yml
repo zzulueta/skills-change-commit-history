@@ -55,8 +55,12 @@ jobs:
       # Logic for step 2
       - name: Ensure .env is gone from history
         run: |
-          if [ -n "$(git log --stat --all -- .env)" ]; then
-            echo "File .env is still in the repository's history, please remove it."
+          # Make sure we have full history (safe even if fetch-depth: 0 was used)
+          git fetch --prune --unshallow || true
+
+          # Robust check for any path named exactly ".env" (or ending in "/.env").
+          if git rev-list --objects --all | grep -E '/?\.env$' >/dev/null; then
+            echo "File .env is still in the repository's history."
             exit 1
           else
             echo "File .env doesn't exist in the repository's history."
